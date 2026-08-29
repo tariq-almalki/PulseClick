@@ -13,6 +13,7 @@ PulseClick is a fast, keyboard-first Windows auto-clicker built in Rust. It is d
 - Black and Light themes.
 - Desktop click indicator with an in-app preview.
 - Portable Windows release executable with an embedded black icon.
+- Native x64 MSI installer with a Start Menu shortcut and clean uninstall support.
 
 ## Requirements
 
@@ -33,6 +34,38 @@ cargo build --release
 ```
 
 The executable is written to `target/release/pulseclick.exe`.
+
+Create the Windows MSI installer locally:
+
+```powershell
+.\installer\build-msi.ps1
+```
+
+The first installer build downloads the pinned WiX 4.0.6 packages from NuGet, verifies their SHA-256 hashes, and stores them in the ignored `.tools/` directory. The installer is written to `dist/` as `PulseClick-Setup-<version>-x64.msi`. Add `-CopyToDownloads` to copy it to your Windows Downloads folder.
+
+For a public release, sign both `target/release/pulseclick.exe` and the MSI with a trusted code-signing certificate before uploading them. The helper is:
+
+```powershell
+.\installer\sign-release.ps1 -CertificateThumbprint "YOUR_CERTIFICATE_THUMBPRINT"
+```
+
+An unsigned or self-signed build can still trigger Microsoft Defender SmartScreen and show **Unknown publisher**. Packaging as MSI improves installation and removal, but trusted code signing is what identifies the publisher.
+
+The recommended Microsoft Public Trust workflow is also prepared:
+
+```powershell
+.\installer\sign-artifact-release.ps1 `
+  -Endpoint "https://<region>.codesigning.azure.net/" `
+  -AccountName "<artifact-signing-account-name>" `
+  -CertificateProfileName "<public-trust-certificate-profile-name>" `
+  -CopyToDownloads
+```
+
+It signs the executable before rebuilding the MSI, signs the MSI, verifies both signatures, and optionally copies the signed installer to Downloads. It requires an Artifact Signing account with identity validation, a **Public Trust** certificate profile, the Certificate Profile Signer role, Azure authentication, and Microsoft Artifact Signing Client Tools installed as administrator.
+
+### Certificate purpose matters
+
+Let’s Encrypt certificates are Domain Validation TLS certificates for HTTPS websites. They prove control of a domain but are not issued for Windows Authenticode code signing, so they cannot remove the SmartScreen publisher warning for PulseClick. Use Microsoft Artifact Signing with a **Public Trust** profile, or another publicly trusted code-signing certificate, for the EXE and MSI.
 
 Run the tests with:
 

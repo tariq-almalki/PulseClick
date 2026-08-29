@@ -10,7 +10,8 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started' },
       { text: 'Configuration', link: '/configuration' },
       { text: 'Code architecture', link: '/architecture' },
-      { text: 'Development', link: '/development' }
+      { text: 'Development', link: '/development' },
+      { text: 'Release packaging', link: '/release-packaging' }
     ],
     sidebar: [
       {
@@ -25,7 +26,8 @@ export default defineConfig({
         text: 'Project documentation',
         items: [
           { text: 'Code architecture', link: '/architecture' },
-          { text: 'Development', link: '/development' }
+          { text: 'Development', link: '/development' },
+          { text: 'Release packaging', link: '/release-packaging' }
         ]
       }
     ],

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package
+      Name="PulseClick"
+      Manufacturer="PulseClick"
+      Version="$(var.AppVersion)"
+      UpgradeCode="{C3B2D0D7-1BE9-4B1A-9A1D-70EAD1B4A1F2}"
+      InstallerVersion="500"
+      Compressed="yes"
+      Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of PulseClick is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="PulseClickIcon" SourceFile="$(var.ProjectDir)\assets\pulseclick.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PulseClickIcon" />
+
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.ProjectDir)\installer\license.rtf" />
+
+    <Feature Id="MainFeature" Title="PulseClick" Description="PulseClick desktop auto-clicker" Level="1">
+      <ComponentGroupRef Id="ApplicationComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="PulseClick" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="PulseClick" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ApplicationComponents" Directory="INSTALLFOLDER">
+      <Component Id="ApplicationExecutable">
+        <File
+            Id="PulseClickExecutable"
+            Source="$(var.PublishDir)\pulseclick.exe"
+            KeyPath="yes"
+            Checksum="yes">
+          <Shortcut
+              Id="PulseClickStartMenuShortcut"
+              Directory="ApplicationProgramsFolder"
+              Name="PulseClick"
+              Description="Launch PulseClick"
+              WorkingDirectory="INSTALLFOLDER"
+              Advertise="no"
+              Icon="PulseClickIcon" />
+        </File>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

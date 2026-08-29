@@ -2,7 +2,9 @@
 
 ## Run the app
 
-Double-click `PulseClick.exe` in the Windows Downloads folder. The application is portable and does not need an installer.
+For the professional installation, run `PulseClick-Setup-<version>-x64.msi`. It installs PulseClick under Program Files, creates a Start Menu shortcut, and registers a clean Windows uninstall entry. A portable `PulseClick.exe` is also available when you do not want an installation.
+
+The first public release should be signed with a trusted code-signing certificate. Without that signature, Windows Defender SmartScreen may show **Unknown publisher** for either the installer or the portable executable.
 
 The first screen opens in an idle state. Configure the pattern and target, then use the large **Start clicking** button or press the configured start/stop key. The default is **F6**.
 
