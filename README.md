@@ -34,10 +34,6 @@ cargo build --release
 
 The executable is written to `target/release/pulseclick.exe`.
 
-### Certificate purpose matters
-
-Let’s Encrypt certificates are Domain Validation TLS certificates for HTTPS websites. They prove control of a domain but are not issued for Windows Authenticode code signing, so they cannot remove the SmartScreen publisher warning for PulseClick. Use Microsoft Artifact Signing with a **Public Trust** profile, or another publicly trusted code-signing certificate, for the EXE and MSI.
-
 Run the tests with:
 
 ```powershell
