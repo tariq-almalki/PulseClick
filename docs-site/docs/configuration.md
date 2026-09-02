@@ -16,7 +16,7 @@ Each pattern is one click group. The **Custom** option lets you choose any burst
 
 ## Mouse button
 
-PulseClick can send left, right, or middle mouse button input through the Windows input API.
+PulseClick can send left, right, or middle mouse button input through the native input backend for the current operating system.
 
 ## Timing
 
@@ -24,7 +24,7 @@ PulseClick can send left, right, or middle mouse button input through the Window
 
 The repeat interval is split into hours, minutes, seconds, and milliseconds. A value of zero is normalized to a 1 ms interval to keep the stop path responsive.
 
-For multi-click patterns, **Burst gap** sets the spacing between the physical clicks inside one group. It defaults to 35 ms and is adjustable from 0 to 500 ms. Set it to **0 ms** to submit the entire burst as one Windows input batch for maximum throughput. A 0 ms gap is fastest, but the actual rate still depends on the target application and system load.
+For multi-click patterns, **Burst gap** sets the spacing between the physical clicks inside one group. It defaults to 35 ms and is adjustable from 0 to 500 ms. Set it to **0 ms** to submit the entire burst without an intentional pause. A 0 ms gap is fastest, but the actual rate still depends on the target application and system load.
 
 ## Target
 
@@ -55,6 +55,8 @@ Global shortcuts are registered at launch and the start/stop shortcut can be cha
 | F9 | Capture target position |
 
 F8 and F9 are reserved so the safety and capture paths remain available. If another application owns the configured start/stop key, PulseClick reports that the global hotkey is unavailable; use the on-screen Start/Stop button or choose another key.
+
+Global hotkeys are supported on Windows and macOS, and on Linux when running an X11 desktop session. macOS may require Accessibility/Input Monitoring permission. The current Linux backend does not provide global hotkeys on Wayland.
 
 ## Themes
 

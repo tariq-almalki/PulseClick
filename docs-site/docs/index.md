@@ -2,7 +2,7 @@
 layout: home
 hero:
   name: PulseClick
-  text: A fast, simple Windows auto-clicker
+  text: A fast, simple desktop auto-clicker
   tagline: Precise click patterns, configurable start/stop hotkeys, fixed targets, themes, and click-indicator feedback in a clean desktop tool.
   actions:
     - theme: brand
@@ -25,9 +25,9 @@ features:
 
 ## What PulseClick does
 
-PulseClick automates repetitive mouse clicking while keeping the important controls visible and easy to understand. It supports single, double, triple, quadruple, and custom 5–1,000-click groups, separate burst and repeat timing, a batched turbo mode, configurable start/stop hotkeys, fixed or current-cursor targets, continuous or fixed-count runs, Black and Light themes, and a small desktop click indicator to confirm activity.
+PulseClick automates repetitive mouse clicking while keeping the important controls visible and easy to understand. It supports single, double, triple, quadruple, and custom 5–1,000-click groups, separate burst and repeat timing, a batched turbo mode, configurable start/stop hotkeys, fixed or current-cursor targets, continuous or fixed-count runs, Black and Light themes, and click feedback to confirm activity.
 
-The app is portable: the release build is a single Windows executable with no installer or runtime setup required.
+The app is portable: release builds are published as standalone archives for Windows, Linux, and macOS with no installer or runtime setup required. Linux global hotkeys currently require X11, and macOS requires Accessibility/Input Monitoring permission.
 
 ## Documentation map
 

@@ -1,6 +1,6 @@
 # PulseClick
 
-PulseClick is a fast, keyboard-first Windows auto-clicker built in Rust. It is designed for precise repetitive input while keeping the interface simple, responsive, and easy to verify at a glance.
+PulseClick is a fast, keyboard-first desktop auto-clicker built in Rust. It is designed for precise repetitive input while keeping the interface simple, responsive, and easy to verify at a glance.
 
 ## Highlights
 
@@ -11,13 +11,15 @@ PulseClick is a fast, keyboard-first Windows auto-clicker built in Rust. It is d
 - Current-cursor or fixed-position targeting.
 - Continuous or fixed-cycle operation.
 - Black and Light themes.
-- Desktop click indicator with an in-app preview.
-- Portable Windows release executable with an embedded black icon.
+- Desktop click indicator on Windows, with an in-app preview on every platform.
+- Portable release builds for Windows, Linux, and macOS.
 
 ## Requirements
 
-- Windows 10 or later.
-- Rust stable toolchain with the MSVC target.
+- Windows 10 or later, Linux with an X11 desktop session, or macOS.
+- Rust stable toolchain.
+- macOS users must grant PulseClick Accessibility/Input Monitoring permission before sending input.
+- Linux global hotkeys currently require X11; Wayland support is not available for the global-hotkey backend.
 - Node.js 18+ only if you want to run the documentation site locally.
 
 ## Build and run
@@ -26,13 +28,17 @@ PulseClick is a fast, keyboard-first Windows auto-clicker built in Rust. It is d
 cargo run --release
 ```
 
-Create the portable executable without launching it:
+Create a portable release binary without launching it:
 
-```powershell
+```text
 cargo build --release
 ```
 
-The executable is written to `target/release/pulseclick.exe`.
+The binary is written to `target/release/pulseclick.exe` on Windows and `target/release/pulseclick` on Linux or macOS.
+
+## Download a release
+
+Tagged releases publish portable archives for Windows x64, Linux x64, Intel macOS, and Apple Silicon macOS on the [GitHub Releases page](https://github.com/tariq-almalki/PulseClick/releases).
 
 Run the tests with:
 
@@ -55,7 +61,7 @@ Then open the local address printed by VitePress. The documentation covers getti
 ## Project layout
 
 ```text
-src/main.rs              Rust application and Windows input/indicator code
+src/main.rs              Rust application, input backends, and Windows indicator code
 assets/                  Application icon assets
 build.rs                 Windows resource embedding
 docs-site/docs/          Local VitePress documentation

@@ -3,7 +3,9 @@
 use eframe::egui::{
     self, Align, Align2, Button, Color32, Frame, Layout, RichText, Rounding, Stroke,
 };
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+use global_hotkey::hotkey::{Code, HotKey};
+use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -176,100 +178,198 @@ fn apply_theme(ctx: &egui::Context, theme: ThemeMode) {
     ctx.set_visuals(visuals);
 }
 
-fn hotkey_virtual_key(key: egui::Key) -> Option<u32> {
+fn hotkey_code(key: egui::Key) -> Option<Code> {
     Some(match key {
-        egui::Key::ArrowDown => 0x28,
-        egui::Key::ArrowLeft => 0x25,
-        egui::Key::ArrowRight => 0x27,
-        egui::Key::ArrowUp => 0x26,
-        egui::Key::Escape => 0x1B,
-        egui::Key::Tab => 0x09,
-        egui::Key::Backspace => 0x08,
-        egui::Key::Enter => 0x0D,
-        egui::Key::Space => 0x20,
-        egui::Key::Insert => 0x2D,
-        egui::Key::Delete => 0x2E,
-        egui::Key::Home => 0x24,
-        egui::Key::End => 0x23,
-        egui::Key::PageUp => 0x21,
-        egui::Key::PageDown => 0x22,
-        egui::Key::Colon | egui::Key::Semicolon => 0xBA,
-        egui::Key::Comma => 0xBC,
-        egui::Key::Minus => 0xBD,
-        egui::Key::Period => 0xBE,
-        egui::Key::Plus | egui::Key::Equals => 0xBB,
-        egui::Key::Slash | egui::Key::Questionmark => 0xBF,
-        egui::Key::OpenBracket => 0xDB,
-        egui::Key::Backslash | egui::Key::Pipe => 0xDC,
-        egui::Key::CloseBracket => 0xDD,
-        egui::Key::Backtick => 0xC0,
-        egui::Key::Quote => 0xDE,
-        egui::Key::Num0 => 0x30,
-        egui::Key::Num1 => 0x31,
-        egui::Key::Num2 => 0x32,
-        egui::Key::Num3 => 0x33,
-        egui::Key::Num4 => 0x34,
-        egui::Key::Num5 => 0x35,
-        egui::Key::Num6 => 0x36,
-        egui::Key::Num7 => 0x37,
-        egui::Key::Num8 => 0x38,
-        egui::Key::Num9 => 0x39,
-        egui::Key::A => 0x41,
-        egui::Key::B => 0x42,
-        egui::Key::C => 0x43,
-        egui::Key::D => 0x44,
-        egui::Key::E => 0x45,
-        egui::Key::F => 0x46,
-        egui::Key::G => 0x47,
-        egui::Key::H => 0x48,
-        egui::Key::I => 0x49,
-        egui::Key::J => 0x4A,
-        egui::Key::K => 0x4B,
-        egui::Key::L => 0x4C,
-        egui::Key::M => 0x4D,
-        egui::Key::N => 0x4E,
-        egui::Key::O => 0x4F,
-        egui::Key::P => 0x50,
-        egui::Key::Q => 0x51,
-        egui::Key::R => 0x52,
-        egui::Key::S => 0x53,
-        egui::Key::T => 0x54,
-        egui::Key::U => 0x55,
-        egui::Key::V => 0x56,
-        egui::Key::W => 0x57,
-        egui::Key::X => 0x58,
-        egui::Key::Y => 0x59,
-        egui::Key::Z => 0x5A,
-        egui::Key::F1 => 0x70,
-        egui::Key::F2 => 0x71,
-        egui::Key::F3 => 0x72,
-        egui::Key::F4 => 0x73,
-        egui::Key::F5 => 0x74,
-        egui::Key::F6 => 0x75,
-        egui::Key::F7 => 0x76,
-        egui::Key::F8 => 0x77,
-        egui::Key::F9 => 0x78,
-        egui::Key::F10 => 0x79,
-        egui::Key::F11 => 0x7A,
-        egui::Key::F12 => 0x7B,
-        egui::Key::F13 => 0x7C,
-        egui::Key::F14 => 0x7D,
-        egui::Key::F15 => 0x7E,
-        egui::Key::F16 => 0x7F,
-        egui::Key::F17 => 0x80,
-        egui::Key::F18 => 0x81,
-        egui::Key::F19 => 0x82,
-        egui::Key::F20 => 0x83,
-        egui::Key::F21 => 0x84,
-        egui::Key::F22 => 0x85,
-        egui::Key::F23 => 0x86,
-        egui::Key::F24 => 0x87,
+        egui::Key::ArrowDown => Code::ArrowDown,
+        egui::Key::ArrowLeft => Code::ArrowLeft,
+        egui::Key::ArrowRight => Code::ArrowRight,
+        egui::Key::ArrowUp => Code::ArrowUp,
+        egui::Key::Escape => Code::Escape,
+        egui::Key::Tab => Code::Tab,
+        egui::Key::Backspace => Code::Backspace,
+        egui::Key::Enter => Code::Enter,
+        egui::Key::Space => Code::Space,
+        egui::Key::Insert => Code::Insert,
+        egui::Key::Delete => Code::Delete,
+        egui::Key::Home => Code::Home,
+        egui::Key::End => Code::End,
+        egui::Key::PageUp => Code::PageUp,
+        egui::Key::PageDown => Code::PageDown,
+        egui::Key::Colon | egui::Key::Semicolon => Code::Semicolon,
+        egui::Key::Comma => Code::Comma,
+        egui::Key::Minus => Code::Minus,
+        egui::Key::Period => Code::Period,
+        egui::Key::Plus | egui::Key::Equals => Code::Equal,
+        egui::Key::Slash | egui::Key::Questionmark => Code::Slash,
+        egui::Key::OpenBracket => Code::BracketLeft,
+        egui::Key::Backslash | egui::Key::Pipe => Code::Backslash,
+        egui::Key::CloseBracket => Code::BracketRight,
+        egui::Key::Backtick => Code::Backquote,
+        egui::Key::Quote => Code::Quote,
+        egui::Key::Num0 => Code::Digit0,
+        egui::Key::Num1 => Code::Digit1,
+        egui::Key::Num2 => Code::Digit2,
+        egui::Key::Num3 => Code::Digit3,
+        egui::Key::Num4 => Code::Digit4,
+        egui::Key::Num5 => Code::Digit5,
+        egui::Key::Num6 => Code::Digit6,
+        egui::Key::Num7 => Code::Digit7,
+        egui::Key::Num8 => Code::Digit8,
+        egui::Key::Num9 => Code::Digit9,
+        egui::Key::A => Code::KeyA,
+        egui::Key::B => Code::KeyB,
+        egui::Key::C => Code::KeyC,
+        egui::Key::D => Code::KeyD,
+        egui::Key::E => Code::KeyE,
+        egui::Key::F => Code::KeyF,
+        egui::Key::G => Code::KeyG,
+        egui::Key::H => Code::KeyH,
+        egui::Key::I => Code::KeyI,
+        egui::Key::J => Code::KeyJ,
+        egui::Key::K => Code::KeyK,
+        egui::Key::L => Code::KeyL,
+        egui::Key::M => Code::KeyM,
+        egui::Key::N => Code::KeyN,
+        egui::Key::O => Code::KeyO,
+        egui::Key::P => Code::KeyP,
+        egui::Key::Q => Code::KeyQ,
+        egui::Key::R => Code::KeyR,
+        egui::Key::S => Code::KeyS,
+        egui::Key::T => Code::KeyT,
+        egui::Key::U => Code::KeyU,
+        egui::Key::V => Code::KeyV,
+        egui::Key::W => Code::KeyW,
+        egui::Key::X => Code::KeyX,
+        egui::Key::Y => Code::KeyY,
+        egui::Key::Z => Code::KeyZ,
+        egui::Key::F1 => Code::F1,
+        egui::Key::F2 => Code::F2,
+        egui::Key::F3 => Code::F3,
+        egui::Key::F4 => Code::F4,
+        egui::Key::F5 => Code::F5,
+        egui::Key::F6 => Code::F6,
+        egui::Key::F7 => Code::F7,
+        egui::Key::F8 => Code::F8,
+        egui::Key::F9 => Code::F9,
+        egui::Key::F10 => Code::F10,
+        egui::Key::F11 => Code::F11,
+        egui::Key::F12 => Code::F12,
+        egui::Key::F13 => Code::F13,
+        egui::Key::F14 => Code::F14,
+        egui::Key::F15 => Code::F15,
+        egui::Key::F16 => Code::F16,
+        egui::Key::F17 => Code::F17,
+        egui::Key::F18 => Code::F18,
+        egui::Key::F19 => Code::F19,
+        egui::Key::F20 => Code::F20,
+        egui::Key::F21 => Code::F21,
+        egui::Key::F22 => Code::F22,
+        egui::Key::F23 => Code::F23,
+        egui::Key::F24 => Code::F24,
         _ => return None,
     })
 }
 
 fn hotkey_is_reserved(key: egui::Key) -> bool {
     matches!(key, egui::Key::F8 | egui::Key::F9)
+}
+
+struct HotkeyController {
+    manager: Option<GlobalHotKeyManager>,
+    toggle: Option<HotKey>,
+    stop: Option<HotKey>,
+    capture: Option<HotKey>,
+}
+
+impl HotkeyController {
+    fn new(toggle_key: egui::Key) -> Self {
+        let mut controller = Self {
+            manager: GlobalHotKeyManager::new().ok(),
+            toggle: None,
+            stop: None,
+            capture: None,
+        };
+
+        controller.stop = controller.register_code(Code::F8);
+        controller.capture = controller.register_code(Code::F9);
+        if !hotkey_is_reserved(toggle_key) {
+            controller.toggle =
+                hotkey_code(toggle_key).and_then(|code| controller.register_code(code));
+        }
+        controller
+    }
+
+    fn register_code(&self, code: Code) -> Option<HotKey> {
+        let manager = self.manager.as_ref()?;
+        let hotkey = HotKey::new(None, code);
+        manager.register(hotkey.clone()).ok()?;
+        Some(hotkey)
+    }
+
+    fn set_toggle(&mut self, key: egui::Key) -> bool {
+        let Some(code) = hotkey_code(key) else {
+            return false;
+        };
+
+        if self
+            .toggle
+            .as_ref()
+            .map(|hotkey| hotkey.id() == HotKey::new(None, code).id())
+            .unwrap_or(false)
+        {
+            return true;
+        }
+
+        let Some(manager) = self.manager.as_ref() else {
+            return false;
+        };
+        let new_hotkey = HotKey::new(None, code);
+        if manager.register(new_hotkey.clone()).is_err() {
+            return false;
+        }
+
+        if let Some(previous) = self.toggle.take() {
+            let _ = manager.unregister(previous);
+        }
+        self.toggle = Some(new_hotkey);
+        true
+    }
+
+    fn is_available(&self) -> bool {
+        self.manager.is_some()
+            && self.toggle.is_some()
+            && self.stop.is_some()
+            && self.capture.is_some()
+    }
+
+    fn poll(&self) -> Vec<GlobalHotKeyEvent> {
+        let mut events = Vec::new();
+        while let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
+            events.push(event);
+        }
+        events
+    }
+
+    fn is_toggle(&self, id: u32) -> bool {
+        self.toggle
+            .as_ref()
+            .map(|hotkey| hotkey.id() == id)
+            .unwrap_or(false)
+    }
+
+    fn is_stop(&self, id: u32) -> bool {
+        self.stop
+            .as_ref()
+            .map(|hotkey| hotkey.id() == id)
+            .unwrap_or(false)
+    }
+
+    fn is_capture(&self, id: u32) -> bool {
+        self.capture
+            .as_ref()
+            .map(|hotkey| hotkey.id() == id)
+            .unwrap_or(false)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -312,9 +412,8 @@ mod win32 {
     use std::mem::size_of;
     use std::ptr::null_mut;
     use std::slice;
-    use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU8, AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicU8, Ordering};
     use std::sync::mpsc::{self, Receiver, Sender};
-    use std::sync::Arc;
     use std::sync::OnceLock;
     use std::thread;
     use std::time::{Duration, Instant};
@@ -331,11 +430,7 @@ mod win32 {
     const MOUSEEVENTF_MIDDLEDOWN: u32 = 0x0020;
     const MOUSEEVENTF_MIDDLEUP: u32 = 0x0040;
 
-    const WM_HOTKEY: u32 = 0x0312;
     const PM_REMOVE: u32 = 0x0001;
-    const MOD_NOREPEAT: u32 = 0x4000;
-    const VK_F8: u32 = 0x77;
-    const VK_F9: u32 = 0x78;
 
     const WM_NCHITTEST: u32 = 0x0084;
     const WM_MOUSEACTIVATE: u32 = 0x0021;
@@ -455,8 +550,6 @@ mod win32 {
         fn GetCursorPos(point: *mut Point) -> i32;
         fn SetCursorPos(x: i32, y: i32) -> i32;
         fn SendInput(count: u32, inputs: *const Input, input_size: i32) -> u32;
-        fn RegisterHotKey(hwnd: Hwnd, id: i32, modifiers: u32, virtual_key: u32) -> i32;
-        fn UnregisterHotKey(hwnd: Hwnd, id: i32) -> i32;
         fn GetModuleHandleW(module_name: *const u16) -> Hwnd;
         fn RegisterClassW(window_class: *const WndClassW) -> u16;
         fn CreateWindowExW(
@@ -530,10 +623,6 @@ mod win32 {
         unsafe { SetCursorPos(x, y) != 0 }
     }
 
-    pub fn send_click(button: MouseButton) -> bool {
-        send_clicks(button, 1)
-    }
-
     pub fn send_clicks(button: MouseButton, click_count: usize) -> bool {
         if click_count == 0 {
             return true;
@@ -570,6 +659,26 @@ mod win32 {
                 inputs.as_ptr(),
                 size_of::<Input>() as i32,
             ) == inputs.len() as u32
+        }
+    }
+
+    pub struct InputSession;
+
+    impl InputSession {
+        pub fn new() -> Option<Self> {
+            Some(Self)
+        }
+
+        pub fn cursor_position(&mut self) -> Option<(i32, i32)> {
+            cursor_position()
+        }
+
+        pub fn set_cursor_position(&mut self, x: i32, y: i32) -> bool {
+            set_cursor_position(x, y)
+        }
+
+        pub fn send_clicks(&mut self, button: MouseButton, click_count: usize) -> bool {
+            send_clicks(button, click_count)
         }
     }
 
@@ -1068,82 +1177,53 @@ mod win32 {
             .min(255)) as u8;
         pixels[index + 3] = (source_alpha + destination_alpha * inverse_alpha / 255).min(255) as u8;
     }
-
-    pub fn spawn_hotkey_listener(
-        toggle_request: Arc<AtomicUsize>,
-        stop_request: Arc<AtomicBool>,
-        capture_request: Arc<AtomicBool>,
-        hotkeys_available: Arc<AtomicBool>,
-        toggle_hotkey: Arc<AtomicU32>,
-    ) {
-        thread::spawn(move || unsafe {
-            let hwnd: Hwnd = null_mut();
-            let stop_registered = RegisterHotKey(hwnd, 2, MOD_NOREPEAT, VK_F8) != 0;
-            let capture_registered = RegisterHotKey(hwnd, 3, MOD_NOREPEAT, VK_F9) != 0;
-            let mut toggle_registered = false;
-            let mut registered_toggle_key = 0_u32;
-            let mut msg = Msg::default();
-            loop {
-                let requested_toggle_key = toggle_hotkey.load(Ordering::Acquire);
-                if requested_toggle_key != registered_toggle_key {
-                    if toggle_registered {
-                        UnregisterHotKey(hwnd, 1);
-                    }
-                    toggle_registered = requested_toggle_key != 0
-                        && RegisterHotKey(hwnd, 1, MOD_NOREPEAT, requested_toggle_key) != 0;
-                    registered_toggle_key = requested_toggle_key;
-                }
-
-                hotkeys_available.store(
-                    toggle_registered && stop_registered && capture_registered,
-                    Ordering::Release,
-                );
-
-                while PeekMessageW(&mut msg, hwnd, 0, 0, PM_REMOVE) > 0 {
-                    if msg.message != WM_HOTKEY {
-                        continue;
-                    }
-
-                    match msg.w_param as i32 {
-                        1 => {
-                            toggle_request.fetch_add(1, Ordering::AcqRel);
-                        }
-                        2 => {
-                            stop_request.store(true, Ordering::Release);
-                        }
-                        3 => {
-                            capture_request.store(true, Ordering::Release);
-                        }
-                        _ => {}
-                    }
-                }
-
-                thread::sleep(Duration::from_millis(8));
-            }
-        });
-    }
 }
 
 #[cfg(not(target_os = "windows"))]
 mod win32 {
     use super::MouseButton;
-    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-    use std::sync::Arc;
+    use enigo::{Button as EnigoButton, Coordinate, Direction, Enigo, Mouse, Settings};
+
+    pub struct InputSession {
+        enigo: Enigo,
+    }
+
+    impl InputSession {
+        pub fn new() -> Option<Self> {
+            Enigo::new(&Settings::default())
+                .ok()
+                .map(|enigo| Self { enigo })
+        }
+
+        pub fn cursor_position(&mut self) -> Option<(i32, i32)> {
+            self.enigo.location().ok()
+        }
+
+        pub fn set_cursor_position(&mut self, x: i32, y: i32) -> bool {
+            self.enigo.move_mouse(x, y, Coordinate::Abs).is_ok()
+        }
+
+        pub fn send_clicks(&mut self, button: MouseButton, click_count: usize) -> bool {
+            let button = match button {
+                MouseButton::Left => EnigoButton::Left,
+                MouseButton::Right => EnigoButton::Right,
+                MouseButton::Middle => EnigoButton::Middle,
+            };
+
+            for _ in 0..click_count {
+                if self.enigo.button(button, Direction::Press).is_err()
+                    || self.enigo.button(button, Direction::Release).is_err()
+                {
+                    return false;
+                }
+            }
+            true
+        }
+    }
 
     pub fn cursor_position() -> Option<(i32, i32)> {
-        None
-    }
-
-    pub fn set_cursor_position(_x: i32, _y: i32) -> bool {
-        false
-    }
-
-    pub fn send_click(_button: MouseButton) -> bool {
-        false
-    }
-
-    pub fn send_clicks(_button: MouseButton, _click_count: usize) -> bool {
-        false
+        let mut input = InputSession::new()?;
+        input.cursor_position()
     }
 
     pub fn show_click_indicator(_x: i32, _y: i32, _color: (u8, u8, u8)) {}
@@ -1151,17 +1231,7 @@ mod win32 {
     pub fn hide_click_indicator() {}
 
     pub fn click_indicator_status() -> u8 {
-        0
-    }
-
-    pub fn spawn_hotkey_listener(
-        _toggle_request: Arc<AtomicUsize>,
-        _stop_request: Arc<AtomicBool>,
-        _capture_request: Arc<AtomicBool>,
-        hotkeys_available: Arc<AtomicBool>,
-        _toggle_hotkey: Arc<AtomicU32>,
-    ) {
-        hotkeys_available.store(false, Ordering::Release);
+        3
     }
 }
 
@@ -1176,7 +1246,6 @@ struct PulseClickApp {
     theme: ThemeMode,
     applied_theme: ThemeMode,
     toggle_hotkey: egui::Key,
-    toggle_hotkey_code: Arc<AtomicU32>,
     recording_hotkey: bool,
     start_delay_seconds: u32,
     interval_hours: u32,
@@ -1188,10 +1257,7 @@ struct PulseClickApp {
     show_click_animation: bool,
     applied_always_on_top: bool,
     last_status: String,
-    toggle_request: Arc<AtomicUsize>,
-    stop_request: Arc<AtomicBool>,
-    capture_request: Arc<AtomicBool>,
-    hotkeys_available: Arc<AtomicBool>,
+    hotkeys: HotkeyController,
     running: Arc<AtomicBool>,
     starting: Arc<AtomicBool>,
     worker_stop: Option<Arc<AtomicBool>>,
@@ -1203,17 +1269,13 @@ struct PulseClickApp {
 }
 
 impl PulseClickApp {
-    fn new(
-        cc: &eframe::CreationContext<'_>,
-        toggle_request: Arc<AtomicUsize>,
-        stop_request: Arc<AtomicBool>,
-        capture_request: Arc<AtomicBool>,
-        hotkeys_available: Arc<AtomicBool>,
-        toggle_hotkey_code: Arc<AtomicU32>,
-    ) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
         apply_theme(&cc.egui_ctx, ThemeMode::Dark);
 
         let (worker_event_sender, worker_events) = mpsc::channel();
+        // The native hotkey manager must be created on the GUI thread. This is
+        // especially important for macOS, where it must be the main thread.
+        let hotkeys = HotkeyController::new(egui::Key::F6);
 
         Self {
             pattern: ClickPattern::Single,
@@ -1226,7 +1288,6 @@ impl PulseClickApp {
             theme: ThemeMode::Dark,
             applied_theme: ThemeMode::Dark,
             toggle_hotkey: egui::Key::F6,
-            toggle_hotkey_code,
             recording_hotkey: false,
             start_delay_seconds: 2,
             interval_hours: 0,
@@ -1238,10 +1299,7 @@ impl PulseClickApp {
             show_click_animation: true,
             applied_always_on_top: false,
             last_status: "Choose your settings, then start clicking.".to_string(),
-            toggle_request,
-            stop_request,
-            capture_request,
-            hotkeys_available,
+            hotkeys,
             running: Arc::new(AtomicBool::new(false)),
             starting: Arc::new(AtomicBool::new(false)),
             worker_stop: None,
@@ -1293,15 +1351,30 @@ impl PulseClickApp {
     }
 
     fn process_hotkeys(&mut self) {
-        if self.capture_request.swap(false, Ordering::AcqRel) {
+        let events = self.hotkeys.poll();
+        let mut capture = false;
+        let mut stop = false;
+        let mut toggles = 0_usize;
+
+        for event in events {
+            if !matches!(event.state, HotKeyState::Pressed) {
+                continue;
+            }
+            if self.hotkeys.is_capture(event.id) {
+                capture = true;
+            } else if self.hotkeys.is_stop(event.id) {
+                stop = true;
+            } else if self.hotkeys.is_toggle(event.id) {
+                toggles = toggles.saturating_add(1);
+            }
+        }
+
+        if capture {
             self.capture_position();
         }
-
-        if self.stop_request.swap(false, Ordering::AcqRel) {
+        if stop {
             self.stop_clicking();
         }
-
-        let toggles = self.toggle_request.swap(0, Ordering::AcqRel);
         for _ in 0..toggles {
             self.toggle_clicking();
         }
@@ -1334,19 +1407,22 @@ impl PulseClickApp {
                 "{} is reserved for safety. Choose another start/stop key.",
                 key.name()
             );
-        } else if hotkey_virtual_key(key).is_some() {
+        } else if hotkey_code(key).is_some() {
             self.set_toggle_hotkey(key);
             self.recording_hotkey = false;
         }
     }
 
     fn set_toggle_hotkey(&mut self, key: egui::Key) {
-        let Some(code) = hotkey_virtual_key(key) else {
-            return;
-        };
-        self.toggle_hotkey = key;
-        self.toggle_hotkey_code.store(code, Ordering::Release);
-        self.last_status = format!("Start/stop hotkey set to {}.", key.name());
+        if self.hotkeys.set_toggle(key) {
+            self.toggle_hotkey = key;
+            self.last_status = format!("Start/stop hotkey set to {}.", key.name());
+        } else {
+            self.last_status = format!(
+                "Could not register {}. Choose another key or check platform permissions.",
+                key.name()
+            );
+        }
     }
 
     fn process_worker_events(&mut self) {
@@ -1361,7 +1437,7 @@ impl PulseClickApp {
                 }
                 WorkerEvent::InputError => {
                     self.last_status =
-                        "Windows rejected the mouse input. Try matching the target app's privilege level."
+                        "The operating system rejected the mouse input. Try matching the target app's privilege level."
                             .to_string();
                 }
             }
@@ -1802,7 +1878,7 @@ impl PulseClickApp {
                 });
                 ui.label(
                     RichText::new(if self.burst_interval_millis() == 0 {
-                        "Turbo mode: the full burst is submitted in one Windows input batch."
+                        "Turbo mode: the full burst is submitted in one native input batch."
                     } else {
                         "Short gap between physical clicks inside the selected burst."
                     })
@@ -1940,9 +2016,11 @@ impl PulseClickApp {
                     self.preview_click_indicator();
                 }
                 ui.label(
-                    RichText::new("A live marker appears at the cursor after each click.")
-                        .size(11.0)
-                        .color(colors.muted),
+                    RichText::new(
+                        "A live marker appears at the click location on supported platforms.",
+                    )
+                    .size(11.0)
+                    .color(colors.muted),
                 );
             });
             self.render_indicator_preview(ui);
@@ -1979,9 +2057,11 @@ impl PulseClickApp {
                     .selected_text(self.toggle_hotkey.name())
                     .width(132.0)
                     .show_ui(ui, |ui| {
-                        for key in egui::Key::ALL.iter().copied().filter(|key| {
-                            hotkey_virtual_key(*key).is_some() && !hotkey_is_reserved(*key)
-                        }) {
+                        for key in egui::Key::ALL
+                            .iter()
+                            .copied()
+                            .filter(|key| hotkey_code(*key).is_some() && !hotkey_is_reserved(*key))
+                        {
                             ui.selectable_value(&mut selected_key, key, key.name());
                         }
                     });
@@ -2042,7 +2122,7 @@ impl PulseClickApp {
 
             ui.add_space(10.0);
             ui.horizontal(|ui| {
-                let hotkeys_active = self.hotkeys_available.load(Ordering::Acquire);
+                let hotkeys_active = self.hotkeys.is_available();
                 let (hotkey_color, hotkey_text) = if hotkeys_active {
                     (colors.success, "Global hotkeys active")
                 } else {
@@ -2256,7 +2336,7 @@ impl eframe::App for PulseClickApp {
                                         .color(colors.text),
                                 );
                                 ui.label(
-                                    RichText::new("Precision automation for Windows")
+                                    RichText::new("Precision automation for your desktop")
                                         .size(12.0)
                                         .color(colors.muted),
                                 );
@@ -2425,6 +2505,10 @@ fn run_clicker(
     }
     starting.store(false, Ordering::Release);
 
+    let Some(mut input) = win32::InputSession::new() else {
+        return WorkerOutcome::InputError;
+    };
+
     let mut completed_cycles = 0_u64;
     let mut last_visual_at: Option<Instant> = None;
     loop {
@@ -2433,21 +2517,21 @@ fn run_clicker(
         }
 
         if settings.target_mode == TargetMode::FixedPosition
-            && !win32::set_cursor_position(settings.fixed_x, settings.fixed_y)
+            && !input.set_cursor_position(settings.fixed_x, settings.fixed_y)
         {
             return WorkerOutcome::InputError;
         }
 
         let click_position = match settings.target_mode {
             TargetMode::FixedPosition => Some((settings.fixed_x, settings.fixed_y)),
-            TargetMode::CurrentCursor => win32::cursor_position(),
+            TargetMode::CurrentCursor => input.cursor_position(),
         };
 
         if settings.burst_interval.is_zero() {
-            // With no gap requested, submit the whole burst in one Windows
-            // input batch. This is substantially faster than making one API
-            // call per physical click while preserving the down/up ordering.
-            if !win32::send_clicks(settings.button, settings.click_count) {
+            // With no gap requested, submit the whole burst in one native
+            // input batch where the platform backend supports batching. This
+            // preserves the down/up ordering without an intentional pause.
+            if !input.send_clicks(settings.button, settings.click_count) {
                 return WorkerOutcome::InputError;
             }
             emit_click_visual(click_position, settings.button, &mut last_visual_at, events);
@@ -2456,7 +2540,7 @@ fn run_clicker(
                 if stop.load(Ordering::Acquire) {
                     return WorkerOutcome::Stopped;
                 }
-                if !win32::send_click(settings.button) {
+                if !input.send_clicks(settings.button, 1) {
                     return WorkerOutcome::InputError;
                 }
                 emit_click_visual(click_position, settings.button, &mut last_visual_at, events);
@@ -2523,22 +2607,6 @@ fn app_icon() -> egui::IconData {
 }
 
 fn main() -> eframe::Result<()> {
-    let toggle_request = Arc::new(AtomicUsize::new(0));
-    let stop_request = Arc::new(AtomicBool::new(false));
-    let capture_request = Arc::new(AtomicBool::new(false));
-    let hotkeys_available = Arc::new(AtomicBool::new(false));
-    let toggle_hotkey_code = Arc::new(AtomicU32::new(
-        hotkey_virtual_key(egui::Key::F6).expect("F6 must have a Windows virtual-key code"),
-    ));
-
-    win32::spawn_hotkey_listener(
-        Arc::clone(&toggle_request),
-        Arc::clone(&stop_request),
-        Arc::clone(&capture_request),
-        Arc::clone(&hotkeys_available),
-        Arc::clone(&toggle_hotkey_code),
-    );
-
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("PulseClick")
@@ -2551,16 +2619,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "PulseClick",
         options,
-        Box::new(move |cc| {
-            Ok(Box::new(PulseClickApp::new(
-                cc,
-                toggle_request,
-                stop_request,
-                capture_request,
-                hotkeys_available,
-                toggle_hotkey_code,
-            )))
-        }),
+        Box::new(|cc| Ok(Box::new(PulseClickApp::new(cc)))),
     )
 }
 
@@ -2588,7 +2647,7 @@ mod tests {
 
     #[test]
     fn f6_is_the_default_toggle_and_f8_f9_are_reserved() {
-        assert_eq!(hotkey_virtual_key(egui::Key::F6), Some(0x75));
+        assert_eq!(hotkey_code(egui::Key::F6), Some(Code::F6));
         assert!(hotkey_is_reserved(egui::Key::F8));
         assert!(hotkey_is_reserved(egui::Key::F9));
         assert!(!hotkey_is_reserved(egui::Key::F7));

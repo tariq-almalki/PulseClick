@@ -1,0 +1,120 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows x64
+            target: x86_64-pc-windows-msvc
+            binary: pulseclick.exe
+            archive: PulseClick-windows-x64.zip
+          - os: ubuntu-24.04
+            platform: Linux x64
+            target: x86_64-unknown-linux-gnu
+            binary: pulseclick
+            archive: PulseClick-linux-x64.tar.gz
+          - os: macos-15-intel
+            platform: macOS Intel
+            target: x86_64-apple-darwin
+            binary: pulseclick
+            archive: PulseClick-macos-intel.tar.gz
+          - os: macos-15
+            platform: macOS Apple Silicon
+            target: aarch64-apple-darwin
+            binary: pulseclick
+            archive: PulseClick-macos-apple-silicon.tar.gz
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            libegl1-mesa-dev \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxcb1-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxrandr-dev \
+            libxtst-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --locked --release --target ${{ matrix.target }}
+
+      - name: Package Windows archive
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'pulseclick-release'
+          New-Item -ItemType Directory -Force -Path $stage, 'dist' | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.binary }}" (Join-Path $stage 'PulseClick.exe')
+          Copy-Item README.md, LICENSE $stage
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath "dist/${{ matrix.archive }}" -Force
+
+      - name: Package Unix archive
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/pulseclick-release"
+          mkdir -p "$stage" "$GITHUB_WORKSPACE/dist"
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "$stage/PulseClick"
+          cp README.md LICENSE "$stage/"
+          tar -C "$stage" -czf "$GITHUB_WORKSPACE/dist/${{ matrix.archive }}" .
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: dist/${{ matrix.archive }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release archives
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "PulseClick ${GITHUB_REF_NAME}" \
+            --generate-notes

@@ -2,7 +2,13 @@
 
 ## Run the app
 
-Double-click `PulseClick.exe` in the Windows Downloads folder. The application is portable and does not need an installer.
+PulseClick is portable and does not need an installer. Download the archive for your platform from GitHub Releases, extract it, and run the included binary:
+
+- Windows: `PulseClick.exe`
+- Linux: `PulseClick`
+- macOS: `PulseClick`
+
+On macOS, grant the app Accessibility/Input Monitoring permission when prompted or through System Settings before sending input. On Linux, use an X11 desktop session for global hotkeys and input simulation; Wayland is not currently supported by the global-hotkey backend.
 
 The first screen opens in an idle state. Configure the pattern and target, then use the large **Start clicking** button or press the configured start/stop key. The default is **F6**.
 
@@ -30,7 +36,7 @@ Fixed-position mode moves the cursor to the stored coordinates before clicking. 
 
 One cycle contains the selected burst. The preset buttons cover single through quadruple clicks; choose **Custom** for 5, 6, or any value up to 1,000 physical clicks per burst.
 
-For the fastest burst, set **Burst gap** to **0 ms**. PulseClick batches the burst through Windows so the input worker does not pause between each physical click. The useful speed limit is usually the target application, not the number in the burst field.
+For the fastest burst, set **Burst gap** to **0 ms**. PulseClick submits the burst through the native input backend without an intentional pause. The useful speed limit is usually the target application, not the number in the burst field.
 
 ## Visual feedback
 
@@ -40,7 +46,7 @@ The click indicator is enabled by default. It appears as a short, click-through 
 - A softer silver marker for right clicks
 - A muted gray marker for middle clicks
 
-Use **Preview indicator** in Preferences to play the effect without sending a click. Use **Show click indicator** to disable it. The animation is throttled at very high click rates and reuses one native overlay, so it does not create unnecessary windows or slow down the click worker.
+Use **Preview indicator** in Preferences to play the effect without sending a click. Use **Show click indicator** to disable it. Windows has the click-through desktop marker; Linux and macOS currently provide the in-app preview while their native desktop overlay is being developed.
 
 ## Choose a start/stop key
 
